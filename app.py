@@ -84,13 +84,25 @@ def init_db():
         service TEXT,
         date TEXT,
         time TEXT,
-        user_email TEXT
+        user_email TEXT,
+        status TEXT DEFAULT 'Pending',
+        admin_note TEXT DEFAULT ''
     )
     """)
 
-    # Try to add user_email column for existing database migrations
+    # Try to add missing columns for existing database migrations
     try:
         cursor.execute("ALTER TABLE appointments ADD COLUMN user_email TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE appointments ADD COLUMN status TEXT DEFAULT 'Pending'")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE appointments ADD COLUMN admin_note TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
 
@@ -108,6 +120,10 @@ def init_db():
     conn.close()
 
 init_db()
+
+# Predefined Service Slots
+DEFAULT_SLOTS = ["09:00 AM", "10:30 AM", "12:00 PM", "02:00 PM", "03:30 PM", "05:00 PM"]
+SLOT_CAPACITY = 2
 
 # Main landing page routes
 @app.route('/')
@@ -157,6 +173,39 @@ def signup():
     return render_template('Sign up page.html')
 
 
+ADMIN_EMAIL = 'carvowservice@gmail.com'
+ADMIN_PASSWORD = 'admin123'
+
+# Admin Login Route
+@app.route('/admin/login', methods=['GET', 'POST'])
+@app.route('/admin_login.html', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password')
+
+        is_valid = False
+        if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
+            is_valid = True
+        else:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("SELECT password FROM users WHERE email = ?", (email,))
+            row = cursor.fetchone()
+            conn.close()
+            if row and check_password_hash(row[0], password) and email == OWNER_EMAIL:
+                is_valid = True
+
+        if is_valid:
+            session['user_email'] = email
+            session['user_name'] = 'Administrator'
+            session['is_admin'] = True
+            return redirect('/admin.html')
+        else:
+            return render_template('admin_login.html', error="Invalid Admin Email or Password!", email=email)
+
+    return render_template('admin_login.html')
+
 # Login routes matching filename
 @app.route('/LOGIN PAGE.html', methods=['GET', 'POST'])
 def login():
@@ -176,14 +225,13 @@ def login():
         if user and check_password_hash(user[3], password):
             session['user_email'] = email
             session['user_name'] = user[1]
+            session['is_admin'] = False  # Customer login always sets customer session
 
             # Send login notification email
             subject = "Carvow Login Alert"
             body = f"Hello {user[1]},\n\nThis is a notification that your Carvow account was accessed successfully.\n\nIf you did not perform this login, please contact support or reset your password immediately.\n\nBest regards,\nCarvow Service Team"
             send_email(email, subject, body)
 
-            if email == OWNER_EMAIL:
-                return redirect('/admin.html')
             return redirect('/booking page.html')
         else:
             return render_template('LOGIN PAGE.html', error="Invalid Email or Password!")
@@ -234,12 +282,48 @@ def logout():
     session.clear()
     return redirect('/appointment login.html')
 
+# API Route: Check Slot Availability
+@app.route('/api/available-slots')
+def get_available_slots():
+    date = request.args.get('date', '').strip()
+    if not date:
+        return {"error": "Date is required"}, 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    # Count active bookings (Pending or Accepted) per time slot on that date
+    cursor.execute("""
+        SELECT time, COUNT(*) 
+        FROM appointments 
+        WHERE date = ? AND (status IS NULL OR status != 'Declined')
+        GROUP BY time
+    """, (date,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+
+    booked_counts = {row[0]: row[1] for row in rows}
+
+    slots_data = []
+    for slot in DEFAULT_SLOTS:
+        booked = booked_counts.get(slot, 0)
+        remaining = max(0, SLOT_CAPACITY - booked)
+        slots_data.append({
+            "slot": slot,
+            "booked": booked,
+            "capacity": SLOT_CAPACITY,
+            "remaining": remaining,
+            "available": remaining > 0
+        })
+
+    return {"date": date, "slots": slots_data}
+
 # Booking page route
 @app.route('/booking page.html')
 def booking():
     if 'user_email' not in session:
         return redirect('/LOGIN.html')
-    return render_template('booking page.html')
+    return render_template('booking page.html', slots=DEFAULT_SLOTS)
 
 # Book post action
 @app.route('/book', methods=['POST'])
@@ -255,22 +339,151 @@ def book():
     time = request.form.get('time')
     user_email = session.get('user_email')
 
+    # Check slot availability
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
+        SELECT COUNT(*) FROM appointments 
+        WHERE date = ? AND time = ? AND (status IS NULL OR status != 'Declined')
+    """, (date, time))
+    booked_count = cursor.fetchone()[0]
+
+    if booked_count >= SLOT_CAPACITY:
+        conn.close()
+        return render_template('booking page.html', error=f"The slot {time} on {date} is already full! Please select another time slot.", slots=DEFAULT_SLOTS)
+
+    cursor.execute("""
     INSERT INTO appointments
-    (name, phone, car, service, date, time, user_email)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    (name, phone, car, service, date, time, user_email, status, admin_note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', '')
     """, (name, phone, car, service, date, time, user_email))
     conn.commit()
     conn.close()
 
     # Send booking confirmation email notification
-    subject = "Carvow Booking Confirmation"
-    body = f"Hello,\n\nYour car service appointment has been scheduled successfully!\n\nBooking Details:\n- Name: {name}\n- Phone: {phone}\n- Car Model: {car}\n- Service Type: {service}\n- Date: {date}\n- Time: {time}\n\nThank you for choosing Carvow Car Service.\n\nBest regards,\nCarvow Service Team"
+    subject = "Carvow Booking Request Received [Pending Approval]"
+    body = f"Hello {name},\n\nYour car service appointment request has been submitted successfully and is currently PENDING approval by Carvow Team.\n\nRequest Details:\n- Name: {name}\n- Phone: {phone}\n- Car Model: {car}\n- Service Type: {service}\n- Date: {date}\n- Time Slot: {time}\n- Status: Pending Approval\n\nWe will notify you once your request is accepted or reviewed.\n\nThank you for choosing Carvow Car Service.\n\nBest regards,\nCarvow Service Team"
     send_email(user_email, subject, body)
 
+    # Send alert to Admin
+    send_email(OWNER_EMAIL, f"New Booking Request from {name}", f"New booking pending approval:\nCustomer: {name} ({user_email})\nCar: {car}\nService: {service}\nDate: {date} at {time}")
+
     return redirect('/sucess.html')
+
+# Admin Dashboard Route
+@app.route('/admin')
+@app.route('/admin.html')
+def admin_dashboard():
+    if not session.get('is_admin'):
+        return redirect('/admin/login')
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Filter status if requested
+    status_filter = request.args.get('status', 'all')
+    valid_filters = ['Pending', 'Accepted', 'In Progress', 'Completed', 'Declined']
+    if status_filter in valid_filters:
+        cursor.execute("SELECT id, name, phone, car, service, date, time, user_email, status, admin_note FROM appointments WHERE status = ? ORDER BY id DESC", (status_filter,))
+    else:
+        cursor.execute("SELECT id, name, phone, car, service, date, time, user_email, status, admin_note FROM appointments ORDER BY id DESC")
+    
+    appointments = cursor.fetchall()
+
+    # Get Metrics
+    cursor.execute("SELECT COUNT(*) FROM appointments")
+    total_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE status = 'Pending' OR status IS NULL")
+    pending_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE status = 'Accepted'")
+    accepted_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE status = 'In Progress'")
+    in_progress_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE status = 'Completed'")
+    completed_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE status = 'Declined'")
+    declined_count = cursor.fetchone()[0]
+
+    conn.close()
+
+    metrics = {
+        "total": total_count,
+        "pending": pending_count,
+        "accepted": accepted_count,
+        "in_progress": in_progress_count,
+        "completed": completed_count,
+        "declined": declined_count
+    }
+
+    return render_template('admin.html', appointments=appointments, metrics=metrics, current_filter=status_filter, owner_email=OWNER_EMAIL)
+
+# Admin Action: Universal Status Update (Accepted, In Progress, Completed, Declined)
+@app.route('/admin/update-status/<int:appointment_id>', methods=['POST', 'GET'])
+def admin_update_status(appointment_id):
+    if not session.get('is_admin'):
+        return {"error": "Unauthorized"}, 403
+
+    new_status = request.form.get('status', request.args.get('status', 'Accepted')).strip()
+    admin_note = request.form.get('admin_note', request.args.get('admin_note', '')).strip()
+
+    valid_statuses = ['Accepted', 'In Progress', 'Completed', 'Declined']
+    if new_status not in valid_statuses:
+        return {"error": "Invalid status"}, 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, user_email, car, service, date, time FROM appointments WHERE id = ?", (appointment_id,))
+    app_data = cursor.fetchone()
+
+    if app_data:
+        name, cust_email, car, service, date, time = app_data
+
+        if not admin_note:
+            if new_status == 'Accepted': admin_note = 'Approved by Admin'
+            elif new_status == 'In Progress': admin_note = 'Servicing underway by technicians'
+            elif new_status == 'Completed': admin_note = 'Service completed. Ready for customer pickup.'
+            elif new_status == 'Declined': admin_note = 'Slot full / unavailable'
+
+        cursor.execute("UPDATE appointments SET status = ?, admin_note = ? WHERE id = ?", (new_status, admin_note, appointment_id))
+        conn.commit()
+        conn.close()
+
+        # Send milestone email notification to customer
+        if new_status == 'Accepted':
+            subject = "🎉 Carvow Service Request APPROVED!"
+            body = f"Hello {name},\n\nGreat news! Your car service booking request has been ACCEPTED by Carvow Service Team.\n\nConfirmed Details:\n- Customer: {name}\n- Car Model: {car}\n- Service Type: {service}\n- Scheduled Date: {date}\n- Confirmed Time Slot: {time}\n- Status: ACCEPTED\n- Admin Note: {admin_note}\n\nPlease arrive 10 minutes prior to your time slot.\n\nThank you for choosing Carvow!\n\nBest regards,\nCarvow Service Team"
+        elif new_status == 'In Progress':
+            subject = "🔧 Work Underway - Your Car Servicing Has Started!"
+            body = f"Hello {name},\n\nLive Service Update: Our technicians have started servicing your vehicle!\n\nDetails:\n- Car Model: {car}\n- Service Type: {service}\n- Scheduled Time: {date} at {time}\n- Status: WORK STILL IN PROGRESS 🔧\n- Note: {admin_note}\n\nWe will inform you as soon as work is complete!\n\nBest regards,\nCarvow Service Team"
+        elif new_status == 'Completed':
+            subject = "🎉 Service Completed - Your Car Is Ready for Pickup!"
+            body = f"Hello {name},\n\nGreat news! Servicing for your {car} is now FULLY COMPLETED!\n\nSummary:\n- Car Model: {car}\n- Service Type: {service}\n- Status: WORK COMPLETED - READY FOR PICKUP 🎉🚘\n- Note: {admin_note}\n\nPlease visit Carvow center to pick up your vehicle.\n\nThank you for choosing Carvow!\n\nBest regards,\nCarvow Service Team"
+        elif new_status == 'Declined':
+            subject = "Carvow Service Request Status Update"
+            body = f"Hello {name},\n\nWe regret to inform you that your car service booking request for {date} at {time} ({service}) could not be accepted at this time.\n\nReason / Note from Admin:\n{admin_note}\n\nYour slot has been released. You are welcome to log in and select another available time slot or date.\n\nBest regards,\nCarvow Service Team"
+
+        send_email(cust_email, subject, body)
+    else:
+        conn.close()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return {"success": True, "message": f"Status updated to {new_status}"}
+    return redirect('/admin.html')
+
+# Backward compatibility routes
+@app.route('/admin/accept/<int:appointment_id>', methods=['POST', 'GET'])
+def admin_accept(appointment_id):
+    return admin_update_status(appointment_id)
+
+@app.route('/admin/decline/<int:appointment_id>', methods=['POST', 'GET'])
+def admin_decline(appointment_id):
+    return admin_update_status(appointment_id)
+
 
 # Success page route
 @app.route('/sucess.html')
@@ -289,58 +502,19 @@ def history():
     conn = get_db()
     cursor = conn.cursor()
 
-    is_owner = (user_email == OWNER_EMAIL)
+    is_owner = (user_email == OWNER_EMAIL) or session.get('is_admin')
 
     if is_owner:
-        # Owner sees all columns including customer email
-        cursor.execute("SELECT id, name, phone, car, service, date, time, user_email FROM appointments")
+        # Owner sees all columns including customer email, status, note
+        cursor.execute("SELECT id, name, phone, car, service, date, time, user_email, status, admin_note FROM appointments ORDER BY id DESC")
     else:
         # Regular user only sees their own appointments
-        cursor.execute("SELECT id, name, phone, car, service, date, time, user_email FROM appointments WHERE user_email = ?", (user_email,))
+        cursor.execute("SELECT id, name, phone, car, service, date, time, user_email, status, admin_note FROM appointments WHERE user_email = ? ORDER BY id DESC", (user_email,))
         
     appointments = cursor.fetchall()
     conn.close()
 
     return render_template('history.html', appointments=appointments, is_owner=is_owner)
-
-# Admin Dashboard Routes
-@app.route('/admin')
-@app.route('/admin.html')
-def admin():
-    if 'user_email' not in session or session.get('user_email') != OWNER_EMAIL:
-        return redirect('/LOGIN.html')
-
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, name, phone, car, service, date, time, user_email FROM appointments ORDER BY id DESC")
-    appointments = cursor.fetchall()
-    
-    cursor.execute("SELECT COUNT(*) FROM appointments")
-    total_bookings = cursor.fetchone()[0]
-    
-    cursor.execute("SELECT COUNT(*) FROM users")
-    total_users = cursor.fetchone()[0]
-    
-    cursor.execute("SELECT COUNT(DISTINCT service) FROM appointments")
-    total_services = cursor.fetchone()[0]
-    
-    conn.close()
-
-    return render_template('admin.html', appointments=appointments, total_bookings=total_bookings, total_users=total_users, total_services=total_services)
-
-@app.route('/admin/delete/<int:id>')
-def delete_appointment(id):
-    if 'user_email' not in session or session.get('user_email') != OWNER_EMAIL:
-        return redirect('/LOGIN.html')
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM appointments WHERE id = ?", (id,))
-    conn.commit()
-    conn.close()
-
-    return redirect('/admin.html')
 
 # Static content pages
 @app.route('/about.html')
@@ -364,5 +538,18 @@ def check():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    import socket
+    try:
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        print("\n=======================================================")
+        print("  CARVOW CAR SERVICE - MULTI-DEVICE SERVER STARTED  ")
+        print("=======================================================")
+        print(f" Local Access (This PC):    http://127.0.0.1:5001/")
+        print(f" Any Device on Wi-Fi/LAN:   http://{local_ip}:5001/")
+        print("=======================================================\n")
+    except Exception:
+        pass
+    app.run(host='0.0.0.0', port=5001, debug=True)
+
 
