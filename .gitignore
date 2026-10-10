@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite databases (contain sensitive user booking data)
+# Note: app.py automatically initializes a fresh carvow.db if not present
+*.db
+*.sqlite3
+booking.php
+
+# Email audit logs
+sent_emails.txt
+
+# Environments & IDEs
+venv/
+env/
+.vscode/
+.idea/
+
+# OS files
+desktop.ini
+Thumbs.db
