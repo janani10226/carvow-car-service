@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/
+sent_emails.txt
+desktop.ini
+*.tmp

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Carvow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0d0f12;
+            color: #f5f6f8;
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: rgba(18, 22, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: whitesmoke;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffcc00;
+        }
+        .admin-badge {
+            background: rgba(255, 204, 0, 0.15);
+            color: #ffcc00;
+            border: 1px solid rgba(255, 204, 0, 0.4);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        nav a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+            text-transform: uppercase;
+        }
+        nav a:hover {
+            color: #ffcc00;
+        }
+        .logout-btn {
+            background-color: #ef4444;
+            color: white !important;
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: background-color 0.3s;
+        }
+        .logout-btn:hover {
+            background-color: #dc2626;
+        }
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 40px auto;
+            flex: 1;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+        .stat-card {
+            background: rgba(18, 22, 26, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 25px 20px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 204, 0, 0.3);
+        }
+        .stat-card h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-card .value {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #ffcc00;
+            margin: 10px 0 0 0;
+        }
+        .dashboard-section {
+            background: rgba(18, 22, 26, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.02);
+            color: #e2e8f0;
+            min-width: 850px;
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.95rem;
+        }
+        th {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #ffcc00;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        .delete-btn {
+            background-color: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+            display: inline-block;
+        }
+        .delete-btn:hover {
+            background-color: #dc2626;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(18, 22, 26, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>CARVOW <span class="admin-badge">Admin Dashboard</span></h1>
+        </div>
+        <nav>
+            <a href="appointment login.html">Home</a>
+            <a href="booking page.html">Book Appointment</a>
+            <a href="history.html">History</a>
+            <a href="logout" class="logout-btn">Logout</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- KPI Stat Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Bookings</h3>
+                <div class="value">{{ total_bookings }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Registered Users</h3>
+                <div class="value">{{ total_users }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Service Categories</h3>
+                <div class="value">{{ total_services }}</div>
+            </div>
+        </div>
+
+        <!-- Master Table Section -->
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2>Master Customer Appointments List</h2>
+            </div>
+
+            {% if appointments %}
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer Name</th>
+                            <th>Phone</th>
+                            <th>Car Model</th>
+                            <th>Service Category</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Customer Email</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in appointments %}
+                        <tr>
+                            <td>#{{ appointment[0] }}</td>
+                            <td><strong>{{ appointment[1] }}</strong></td>
+                            <td>{{ appointment[2] }}</td>
+                            <td>{{ appointment[3] }}</td>
+                            <td>{{ appointment[4] }}</td>
+                            <td>{{ appointment[5] }}</td>
+                            <td>{{ appointment[6] }}</td>
+                            <td><a href="mailto:{{ appointment[7] }}" style="color: #60a5fa; text-decoration: none;">{{ appointment[7] }}</a></td>
+                            <td>
+                                <a href="/admin/delete/{{ appointment[0] }}" class="delete-btn" onclick="return confirm('Are you sure you want to delete appointment #{{ appointment[0] }}?');">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p style="text-align: center; color: #94a3b8; font-size: 1.1rem; padding: 30px;">No appointments recorded in the database yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 Janani. All rights reserved.</p>
+    </footer>
+</body>
+</html>
