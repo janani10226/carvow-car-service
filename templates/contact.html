@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Carvow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body{
+            background-image:url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7');
+            background-size:cover;
+            background-position:center;
+            background-repeat:no-repeat;
+            background-attachment:fixed;
+            min-height:100vh;
+        }
+
+        .overlay{
+            width:100%;
+            min-height:100vh;
+            background:rgba(0,0,0,0.7);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding: 40px 10px;
+        }
+
+        .contact-container{
+            width:90%;
+            max-width:850px;
+            background: rgba(18, 22, 26, 0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding:40px 20px;
+            border-radius:15px;
+            color:white;
+            text-align:center;
+            box-shadow:0px 0px 15px rgba(0,0,0,0.5);
+        }
+
+        .contact-container h1{
+            font-size:36px;
+            margin-bottom:20px;
+            color:#ffcc00;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .contact-container p{
+            font-size:16px;
+            line-height:1.8;
+            margin-bottom:15px;
+            color: #cbd5e1;
+        }
+
+        .contact-info{
+            margin-top:25px;
+        }
+
+        .contact-info h3{
+            margin-bottom:10px;
+            color:#ffcc00;
+            font-weight: 600;
+        }
+
+        .contact-info p{
+            margin:8px 0;
+            font-size:15px;
+            color: #cbd5e1;
+        }
+
+        .btn{
+            display:inline-block;
+            margin-top:25px;
+            padding:12px 25px;
+            background: linear-gradient(135deg, #ffcc00, #ff9900);
+            color: #0d0f12;
+            text-decoration:none;
+            border-radius:8px;
+            font-weight:700;
+            box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover{
+            background: linear-gradient(135deg, #ffdd33, #ffaa00);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 204, 0, 0.5);
+            color: #0d0f12;
+        }
+        footer {
+            text-align: center;
+            padding: 15px;
+            background: black;
+            color: whitesmoke;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="overlay">
+
+        <div class="contact-container">
+
+            <h1>Contact Carvow</h1>
+
+            <p>
+                We are here to help you with all your car service and appointment booking needs.
+            </p>
+
+            <p>
+                Feel free to contact us for booking assistance, service details, maintenance support,
+                or any vehicle-related queries.
+            </p>
+
+            <div class="contact-info">
+
+                <h3>Contact Details</h3>
+
+                <p><strong>Phone:</strong> +91 98765 43210</p>
+                <p><strong>Email:</strong> carvowservice@gmail.com</p>
+                <p><strong>Address:</strong> Carvow Service Center, Chennai, Tamil Nadu</p>
+                <p><strong>Working Hours:</strong> Monday - Saturday | 9:00 AM - 7:00 PM</p>
+
+            </div>
+
+           <a href="appointment login.html" class="btn">Back to Home</a>
+
+        </div>
+
+    </div>
+
+    <footer>
+        <p>© 2026 Janani. All rights reserved.</p>
+    </footer>
+</body>
+</html>

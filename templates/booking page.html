@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Service Booking - Carvow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('../pictures/emob_bev_stage_range_dsk_fb (1).webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            color: #f5f6f8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: rgba(18, 22, 26, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffcc00;
+        }
+        nav a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-left: 20px;
+            text-transform: uppercase;
+        }
+        nav a:hover {
+            color: #ffcc00;
+        }
+        h2 {
+            text-align: center;
+            color: #ffffff;
+            margin-top: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 520px;
+            width: 100%;
+            background: rgba(18, 22, 26, 0.82);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            box-sizing: border-box;
+        }
+        .error-banner {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        input[type="text"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            box-sizing: border-box;
+            font-size: 14px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s;
+        }
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #ffcc00;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.15);
+        }
+        option {
+            background-color: #1e242c;
+            color: #ffffff;
+        }
+
+        /* Slot Selector Styles */
+        .slots-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .slots-status-hint {
+            font-size: 0.78rem;
+            color: #ffcc00;
+            font-weight: 600;
+        }
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+        @media (max-width: 480px) {
+            .slots-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .slot-chip {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 10px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .slot-chip:hover:not(.disabled) {
+            border-color: #ffcc00;
+            background: rgba(255, 204, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .slot-chip.selected {
+            border-color: #ffcc00;
+            background: linear-gradient(135deg, rgba(255, 204, 0, 0.25), rgba(255, 153, 0, 0.15));
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        }
+        .slot-chip.disabled {
+            opacity: 0.45;
+            background: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239, 68, 68, 0.3);
+            cursor: not-allowed;
+        }
+        .slot-time {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .slot-avail {
+            font-size: 0.72rem;
+            margin-top: 4px;
+            color: #10b981;
+            font-weight: 600;
+        }
+        .slot-chip.disabled .slot-avail {
+            color: #ef4444;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            background: linear-gradient(135deg, #ffcc00, #ff9900);
+            color: #0d0f12;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        button[type="submit"]:hover {
+            background: linear-gradient(135deg, #ffdd33, #ffaa00);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 204, 0, 0.5);
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .back-link:hover {
+            color: #ffcc00;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(18, 22, 26, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 50px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CARVOW</h1>
+        <nav>
+            <a href="appointment login.html">Home</a>
+            <a href="history.html">My History</a>
+        </nav>
+    </header>
+    <div class="main-content" style="flex-direction: column;">
+        <h2>SERVICE BOOKING</h2>
+        <div class="container">
+            {% if error %}
+            <div class="error-banner">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="/book" method="POST" onsubmit="return handleBooking(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" placeholder="Enter contact phone" required>
+                </div>
+                <div class="form-group">
+                    <label>Car Model & Make</label>
+                    <input type="text" name="car" placeholder="e.g. BMW M4 / Honda Civic" required>
+                </div>
+                <div class="form-group">
+                    <label>Service Type</label>
+                    <select name="service">
+                        <option>Oil Change</option>
+                        <option>Car Wash & Detailing</option>
+                        <option>Engine Service</option>
+                        <option>Full Maintenance Package</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Appointment Date</label>
+                    <input type="date" id="dateInput" name="date" required onchange="fetchAvailableSlots()">
+                </div>
+
+                <!-- Real-time Slot Availability Grid -->
+                <div class="form-group">
+                    <div class="slots-title">
+                        <label style="margin: 0;">Select Available Time Slot</label>
+                        <span class="slots-status-hint" id="slotHint">Pick a date first</span>
+                    </div>
+                    
+                    <input type="hidden" id="selectedTime" name="time" required>
+                    
+                    <div class="slots-grid" id="slotsGrid">
+                        <!-- Slots rendered dynamically -->
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn">Submit Booking Request</button>
+                <a href="appointment login.html" class="back-link">Back to Home</a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    const DEFAULT_SLOTS = ["09:00 AM", "10:30 AM", "12:00 PM", "02:00 PM", "03:30 PM", "05:00 PM"];
+    const CAPACITY = 2;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('dateInput');
+        dateInput.min = today;
+        dateInput.value = today;
+        fetchAvailableSlots();
+
+        // Auto-refresh slot availability every 6 seconds for real-time accuracy
+        setInterval(fetchAvailableSlots, 6000);
+    });
+
+    async function fetchAvailableSlots() {
+        const dateVal = document.getElementById('dateInput').value;
+        const slotsGrid = document.getElementById('slotsGrid');
+        const slotHint = document.getElementById('slotHint');
+        const selectedTimeInput = document.getElementById('selectedTime');
+
+        if (!dateVal) {
+            slotHint.innerText = 'Pick a date to check availability';
+            slotsGrid.innerHTML = '';
+            selectedTimeInput.value = '';
+            return;
+        }
+
+        if (window.location.protocol !== 'file:') {
+            try {
+                const res = await fetch(`/api/available-slots?date=${dateVal}`);
+                const data = await res.json();
+                renderSlots(data.slots);
+            } catch (err) {
+                console.error("Failed to fetch slots", err);
+                renderFallbackSlots();
+            }
+        } else {
+            // Offline localStorage calculation
+            let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            let bookedCounts = {};
+            appointments.forEach(app => {
+                if (app.date === dateVal && app.status !== 'Declined') {
+                    bookedCounts[app.time] = (bookedCounts[app.time] || 0) + 1;
+                }
+            });
+
+            let slotsData = DEFAULT_SLOTS.map(slot => {
+                let booked = bookedCounts[slot] || 0;
+                let remaining = Math.max(0, CAPACITY - booked);
+                return {
+                    slot: slot,
+                    booked: booked,
+                    capacity: CAPACITY,
+                    remaining: remaining,
+                    available: remaining > 0
+                };
+            });
+            renderSlots(slotsData);
+        }
+    }
+
+    function renderSlots(slots) {
+        const slotsGrid = document.getElementById('slotsGrid');
+        const slotHint = document.getElementById('slotHint');
+        const currentSelected = document.getElementById('selectedTime').value;
+
+        slotsGrid.innerHTML = '';
+        let availableAny = false;
+
+        slots.forEach((s) => {
+            const chip = document.createElement('div');
+            const isSelected = (s.slot === currentSelected && s.available);
+            
+            chip.className = 'slot-chip' + (s.available ? '' : ' disabled') + (isSelected ? ' selected' : '');
+            
+            if (!s.available) {
+                chip.innerHTML = `
+                    <span class="slot-time">${s.slot}</span>
+                    <span class="slot-avail">FULL</span>
+                `;
+                if (s.slot === currentSelected) {
+                    document.getElementById('selectedTime').value = '';
+                }
+            } else {
+                availableAny = true;
+                chip.innerHTML = `
+                    <span class="slot-time">${s.slot}</span>
+                    <span class="slot-avail">${s.remaining} left</span>
+                `;
+                chip.onclick = () => selectSlot(chip, s.slot);
+            }
+
+            slotsGrid.appendChild(chip);
+        });
+
+        if (availableAny) {
+            slotHint.innerText = '⚡ Realtime Availability Live';
+        } else {
+            slotHint.innerText = 'All slots full for this date';
+        }
+    }
+
+    function renderFallbackSlots() {
+        let slotsData = DEFAULT_SLOTS.map(s => ({
+            slot: s,
+            available: true,
+            remaining: CAPACITY
+        }));
+        renderSlots(slotsData);
+    }
+
+    function selectSlot(element, slotValue) {
+        document.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('selected'));
+        element.classList.add('selected');
+        document.getElementById('selectedTime').value = slotValue;
+    }
+
+    function handleBooking(event) {
+        let selectedTime = document.getElementById('selectedTime').value;
+        if (!selectedTime) {
+            alert("Please select an available time slot!");
+            event.preventDefault();
+            return false;
+        }
+
+        if (window.location.protocol === 'file:') {
+            let currentUser = JSON.parse(localStorage.getItem('currentUser')) || { email: 'guest@carvow.com' };
+            
+            let name = document.querySelector('input[name="name"]').value;
+            let phone = document.querySelector('input[name="phone"]').value;
+            let car = document.querySelector('input[name="car"]').value;
+            let service = document.querySelector('select[name="service"]').value;
+            let date = document.querySelector('input[name="date"]').value;
+
+            let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            let newId = appointments.length + 1;
+            appointments.push({
+                id: newId,
+                name: name,
+                phone: phone,
+                car: car,
+                service: service,
+                date: date,
+                time: selectedTime,
+                user_email: currentUser.email,
+                status: 'Pending',
+                admin_note: ''
+            });
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+
+            alert("Booking appointment request submitted successfully [Pending Approval]!");
+            window.location.href = "sucess.html";
+            return false;
+        }
+        return true;
+    }
+    </script>
+    <footer>
+        <p>© 2026 Janani. All rights reserved.</p>
+    </footer>
+</body>
+</html>
